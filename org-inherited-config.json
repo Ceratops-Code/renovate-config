@@ -1,0 +1,11 @@
+{
+  "extends": [
+    "config:recommended"
+  ],
+  "baseBranchPatterns": [
+    "release/local"
+  ],
+  "requireConfig": "optional",
+  "onboarding": false,
+  "automerge": false
+}
