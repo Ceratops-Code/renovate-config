@@ -8,7 +8,6 @@
   "requireConfig": "optional",
   "onboarding": false,
   "automerge": false,
-  "osvVulnerabilityAlerts": false,
   "packageRules": [
     {
       "description": "Update pinned Python and Node versions",
