@@ -1,11 +1,73 @@
 {
   "extends": [
-    "config:recommended"
+    "security:only-security-updates"
   ],
   "baseBranchPatterns": [
     "release/local"
   ],
   "requireConfig": "optional",
   "onboarding": false,
-  "automerge": false
+  "automerge": false,
+  "packageRules": [
+    {
+      "description": "Update pinned Python and Node versions",
+      "matchManagers": [
+        "pyenv",
+        "nvm",
+        "nodenv"
+      ],
+      "enabled": true
+    },
+    {
+      "description": "Update the Python version declared by Python projects",
+      "matchManagers": [
+        "pep621"
+      ],
+      "matchDepTypes": [
+        "requires-python"
+      ],
+      "enabled": true
+    },
+    {
+      "description": "Update the Python and Node versions used by CI",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchDepTypes": [
+        "uses-with"
+      ],
+      "matchDepNames": [
+        "python",
+        "node"
+      ],
+      "enabled": true
+    },
+    {
+      "description": "Update the Node runtime range declared by JavaScript projects",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchDepTypes": [
+        "engines"
+      ],
+      "matchDepNames": [
+        "node"
+      ],
+      "enabled": true
+    },
+    {
+      "description": "Update declared pnpm versions",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchDepTypes": [
+        "packageManager",
+        "devEngines.packageManager"
+      ],
+      "matchDepNames": [
+        "pnpm"
+      ],
+      "enabled": true
+    }
+  ]
 }
