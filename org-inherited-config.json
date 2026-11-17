@@ -1,7 +1,4 @@
 {
-  "extends": [
-    "security:only-security-updates"
-  ],
   "baseBranchPatterns": [
     "release/local"
   ],
@@ -9,6 +6,13 @@
   "onboarding": false,
   "automerge": false,
   "packageRules": [
+    {
+      "description": "Dependabot maintains supported packages; Renovate updates only the toolchain declarations enabled below.",
+      "matchPackageNames": [
+        "*"
+      ],
+      "enabled": false
+    },
     {
       "description": "Update pinned Python and Node versions",
       "matchManagers": [
@@ -69,5 +73,12 @@
       ],
       "enabled": true
     }
-  ]
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": false
+  },
+  "osvVulnerabilityAlerts": false,
+  "dependencyDashboard": {
+    "enabled": true
+  }
 }
