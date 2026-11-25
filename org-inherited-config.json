@@ -2,7 +2,7 @@
   "baseBranchPatterns": [
     "release/local"
   ],
-  "requireConfig": "optional",
+  "requireConfig": "ignored",
   "onboarding": false,
   "automerge": false,
   "packageRules": [
@@ -72,6 +72,20 @@
         "pnpm"
       ],
       "enabled": true
+    },
+    {
+      "description": "Restrict AuTopsy updates to its owned dependency files",
+      "matchRepositories": [
+        "Ceratops-Code/AuTopsy"
+      ],
+      "matchFileNames": [
+        "!.github/workflows/validate.yml",
+        "!scripts/package.json",
+        "!scripts/package-lock.json",
+        "!scripts/pyproject.toml",
+        "!scripts/uv.lock"
+      ],
+      "enabled": false
     }
   ],
   "vulnerabilityAlerts": {
