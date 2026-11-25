@@ -25,6 +25,6 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
         with:
-          node-version: '26.13.0'
+          node-version: '26.13.1'
       - name: Check inherited Renovate configuration
         run: npm exec --yes --package=renovate@44.240.0 -- renovate-config-validator --strict org-inherited-config.json
