@@ -52,6 +52,18 @@ jobs:
           const { applyPackageRules } = await import(pathToFileURL(resolve(renovate, 'dist/util/package-rules/index.js')));
           const policy = JSON.parse(readFileSync('org-inherited-config.json', 'utf8'));
           assert.equal(policy.enabledManagers, undefined, 'new native managers must remain available');
+          const { getManagers } = await import(pathToFileURL(resolve(renovate, 'dist/modules/manager/index.js')));
+          const { getMatchingFiles } = await import(pathToFileURL(resolve(renovate, 'dist/workers/repository/extract/file-match.js')));
+          for (const [manager, definition] of getManagers()) {
+            const defaults = definition.defaultConfig ?? {};
+            const config = { ...defaults, ...policy[manager], manager };
+            assert.notEqual(config.enabled, false, manager + ' is disabled');
+            assert.ok(config.managerFilePatterns?.length, manager + ' needs a filename pattern');
+          }
+          for (const [manager, file] of [['kubernetes', 'infra/deployment.yaml'], ['pep723', 'tools/demo.py'],
+            ['cdnurl', 'site/index.html'], ['ocb', 'telemetry/builder.yml'], ['pip-compile', 'tools/requirements-dev.txt']]) {
+            assert.deepEqual(getMatchingFiles({ ...policy[manager], manager }, [file, 'unrelated.md']), [file]);
+          }
           const { packageRules } = policy;
           const repo = 'Ceratops-Code/example';
           const cases = [
