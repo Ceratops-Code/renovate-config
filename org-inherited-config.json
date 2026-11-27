@@ -7,74 +7,122 @@
   "automerge": false,
   "packageRules": [
     {
-      "description": "Dependabot maintains supported packages; Renovate updates only the toolchain declarations enabled below.",
-      "matchPackageNames": [
-        "*"
+      "description": "Dependabot updates library dependencies, action references and container manifests supported by its package managers.",
+      "matchManagers": [
+        "apm",
+        "bazel",
+        "bazel-module",
+        "bun",
+        "bundler",
+        "cargo",
+        "composer",
+        "devcontainer",
+        "deno",
+        "docker-compose",
+        "dockerfile",
+        "gemspec",
+        "git-submodules",
+        "github-actions",
+        "gomod",
+        "gradle",
+        "helm-requirements",
+        "helm-values",
+        "helmv3",
+        "julia",
+        "maven",
+        "mix",
+        "nix",
+        "npm",
+        "nuget",
+        "pep621",
+        "pip-compile",
+        "pip_requirements",
+        "pip_setup",
+        "pipenv",
+        "poetry",
+        "pre-commit",
+        "pub",
+        "swift",
+        "terraform"
       ],
       "enabled": false
     },
     {
-      "description": "Update pinned Python and Node versions",
-      "matchManagers": [
-        "pyenv",
-        "nvm",
-        "nodenv"
+      "description": "Update language and SDK versions in every format Renovate recognizes, including manifests that also declare libraries.",
+      "matchDatasources": [
+        "*-version"
       ],
       "enabled": true
     },
     {
-      "description": "Update the Python version declared by Python projects",
+      "description": "Update tool versions read from CI inputs, engine requirements and package-manager declarations.",
       "matchManagers": [
-        "pep621"
+        "bun",
+        "deno",
+        "github-actions",
+        "npm",
+        "terraform"
       ],
       "matchDepTypes": [
-        "requires-python"
-      ],
-      "enabled": true
-    },
-    {
-      "description": "Update the Python and Node versions used by CI",
-      "matchManagers": [
-        "github-actions"
-      ],
-      "matchDepTypes": [
-        "uses-with"
-      ],
-      "matchDepNames": [
-        "python",
-        "node"
-      ],
-      "enabled": true
-    },
-    {
-      "description": "Update the Node runtime range declared by JavaScript projects",
-      "matchManagers": [
-        "npm"
-      ],
-      "matchDepTypes": [
-        "engines"
-      ],
-      "matchDepNames": [
-        "node"
-      ],
-      "enabled": true
-    },
-    {
-      "description": "Update declared pnpm versions",
-      "matchManagers": [
-        "npm"
-      ],
-      "matchDepTypes": [
+        "uses-with",
+        "github-runner",
+        "engines",
+        "volta",
         "packageManager",
-        "devEngines.packageManager"
-      ],
-      "matchDepNames": [
-        "pnpm"
+        "devEngines.packageManager",
+        "devEngines.runtime",
+        "required_version",
+        "tfe_workspace"
       ],
       "enabled": true
     },
     {
-      "description": "Restrict AuTopsy updates to its owned dependency files",
+      "description": "Composer and Poetry look up their language versions in the upstream runtime release repositories.",
+      "matchManagers": [
+        "composer",
+        "poetry"
+      ],
+      "matchDatasources": [
+        "github-tags",
+        "github-releases"
+      ],
+      "matchPackageNames": [
+        "containerbase/*-prebuild"
+      ],
+      "enabled": true
+    },
+    {
+      "description": "Dependabot updates sbt libraries and plugins. Renovate updates the Scala and sbt version declarations.",
+      "matchManagers": [
+        "sbt"
+      ],
+      "matchDatasources": [
+        "sbt-package",
+        "sbt-plugin"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Allow major Node.js upgrades in Travis CI as well as minor and patch upgrades.",
+      "matchManagers": [
+        "travis"
+      ],
+      "matchDatasources": [
+        "node-version"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": true
+    },
+    {
+      "description": "Only AuTopsy maintains the downloads extracted by its custom managers.",
+      "matchManagers": ["custom.regex"],
+      "matchPackageNames": ["https://github.com/ggml-org/whisper.cpp", "shinchiro/mpv-winbuild-cmake"],
+      "enabled": false
+    },
+    {
+      "description": "AuTopsy receives Audacity dependency versions through upstream imports.",
       "matchRepositories": [
         "Ceratops-Code/AuTopsy"
       ],
@@ -86,6 +134,42 @@
         "!scripts/uv.lock"
       ],
       "enabled": false
+    },
+    {
+      "description": "AuTopsy owns only the FFmpeg requirement in the shared Audacity Conan recipe.",
+      "matchRepositories": [
+        "Ceratops-Code/AuTopsy"
+      ],
+      "matchManagers": [
+        "conan"
+      ],
+      "matchFileNames": [
+        "conan/conanfile.py"
+      ],
+      "matchDepNames": [
+        "ffmpeg"
+      ],
+      "enabled": true
+    },
+    {
+      "description": "The weekly review updates the archive and every recorded checksum in one pull request.",
+      "matchRepositories": [
+        "Ceratops-Code/AuTopsy"
+      ],
+      "matchFileNames": [
+        "src/video/BuildSpeechEngine.cmake",
+        "scripts/build/windows/build_video_installer.py"
+      ],
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchPackageNames": [
+        "https://github.com/ggml-org/whisper.cpp",
+        "shinchiro/mpv-winbuild-cmake"
+      ],
+      "enabled": true,
+      "dependencyDashboardApproval": true,
+      "dependencyDashboardCategory": "Downloads requiring matching checksums"
     }
   ],
   "vulnerabilityAlerts": {
@@ -94,5 +178,32 @@
   "osvVulnerabilityAlerts": false,
   "dependencyDashboard": {
     "enabled": true
-  }
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "src/video/BuildSpeechEngine.cmake"
+      ],
+      "matchStrings": [
+        "URL\\s+https://codeload\\.github\\.com/ggml-org/whisper\\.cpp/tar\\.gz/(?<currentDigest>[0-9a-f]{40})"
+      ],
+      "depNameTemplate": "ggml-org/whisper.cpp",
+      "packageNameTemplate": "https://github.com/ggml-org/whisper.cpp",
+      "datasourceTemplate": "git-refs",
+      "currentValueTemplate": "master"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "scripts/build/windows/build_video_installer.py"
+      ],
+      "matchStrings": [
+        "https://github\\.com/shinchiro/mpv-winbuild-cmake/releases/download/(?<currentValue>\\d{8})/mpv-dev-x86_64-\\d{8}-git-[0-9a-f]+\\.7z"
+      ],
+      "depNameTemplate": "shinchiro/mpv-winbuild-cmake",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "regex:^(?<major>\\d{8})$"
+    }
+  ]
 }
