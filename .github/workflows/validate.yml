@@ -5,17 +5,12 @@ on:
     paths:
       - org-inherited-config.json
       - .github/workflows/validate.yml
-  push:
-    branches: [main]
-    paths:
-      - org-inherited-config.json
-      - .github/workflows/validate.yml
-
 permissions:
   contents: read
 
 jobs:
   dependency-configuration:
+    if: ${{ (github.event_name != 'pull_request' && github.event_name != 'pull_request_target') || !contains(fromJSON('["dependabot","dependabot[bot]","renovate","renovate[bot]"]'), github.event.pull_request.user.login) }}
     name: Dependency configuration
     env:
       RENOVATE_VERSION: '44.240.0'
