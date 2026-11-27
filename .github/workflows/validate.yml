@@ -17,6 +17,8 @@ permissions:
 jobs:
   dependency-configuration:
     name: Dependency configuration
+    env:
+      RENOVATE_VERSION: '44.240.0'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -27,4 +29,72 @@ jobs:
         with:
           node-version: '26.13.0'
       - name: Check inherited Renovate configuration
-        run: npm exec --yes --package=renovate@44.240.0 -- renovate-config-validator --strict org-inherited-config.json
+        run: npm exec --yes --package=renovate@${{ env.RENOVATE_VERSION }} -- renovate-config-validator --strict org-inherited-config.json
+      - name: Exercise dependency update rules
+        shell: bash
+        run: |
+          npm exec --yes --package=renovate@$RENOVATE_VERSION -- node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { existsSync, readFileSync, readdirSync } from 'node:fs';
+          import { delimiter, resolve } from 'node:path';
+          import { pathToFileURL } from 'node:url';
+          let renovate;
+          for (const bin of process.env.PATH.split(delimiter)) {
+            const candidate = resolve(bin, '../renovate');
+            if (existsSync(resolve(candidate, 'dist/util/package-rules/index.js'))) {
+              renovate = candidate;
+              break;
+            }
+          }
+          assert.ok(renovate, 'npm did not supply the pinned Renovate package');
+          const { init } = await import(pathToFileURL(resolve(renovate, 'dist/logger/index.js')));
+          await init();
+          const { applyPackageRules } = await import(pathToFileURL(resolve(renovate, 'dist/util/package-rules/index.js')));
+          const policy = JSON.parse(readFileSync('org-inherited-config.json', 'utf8'));
+          assert.equal(policy.enabledManagers, undefined, 'new native managers must remain available');
+          const { getManagers } = await import(pathToFileURL(resolve(renovate, 'dist/modules/manager/index.js')));
+          const { getMatchingFiles } = await import(pathToFileURL(resolve(renovate, 'dist/workers/repository/extract/file-match.js')));
+          for (const [manager, definition] of getManagers()) {
+            const defaults = definition.defaultConfig ?? {};
+            const config = { ...defaults, ...policy[manager], manager };
+            assert.notEqual(config.enabled, false, manager + ' is disabled');
+            assert.ok(config.managerFilePatterns?.length, manager + ' needs a filename pattern');
+          }
+          for (const [manager, file] of [['kubernetes', 'infra/deployment.yaml'], ['pep723', 'tools/demo.py'],
+            ['cdnurl', 'site/index.html'], ['ocb', 'telemetry/builder.yml'], ['pip-compile', 'tools/requirements-dev.txt']]) {
+            assert.deepEqual(getMatchingFiles({ ...policy[manager], manager }, [file, 'unrelated.md']), [file]);
+          }
+          const { packageRules } = policy;
+          const repo = 'Ceratops-Code/example';
+          const cases = [
+            [repo, 'tools/Cargo.toml', 'cargo', 'crate', 'serde', '', false],
+            [repo, 'tools/rust-toolchain.toml', 'rust-toolchain', 'rust-version', 'rust', '', true],
+            [repo, 'package.json', 'npm', 'npm', 'lodash', 'dependencies', false],
+            [repo, 'package.json', 'npm', 'npm', 'pnpm', 'packageManager', true],
+            [repo, 'setup.cfg', 'setup-cfg', 'pypi', 'requests', '', false],
+            [repo, 'go.mod', 'gomod', 'go', 'example.com/lib', 'require', false],
+            [repo, 'App.csproj', 'nuget', 'nuget', 'NUnit', 'nuget', false],
+            [repo, 'pubspec.yaml', 'pub', 'dart', 'flutter_test', 'dependencies', false],
+            [repo, 'pyproject.toml', 'poetry', 'github-releases', 'containerbase/python-prebuild', 'dependencies', true],
+            [repo, 'composer.json', 'composer', 'github-tags', 'containerbase/php-prebuild', 'require', true],
+            [repo, 'build.sbt', 'sbt', 'maven', 'org.scala-lang:scala3-library_3', '', true],
+            [repo, 'project/plugins.sbt', 'sbt', 'sbt-plugin', 'org.example:plugin', '', false],
+            [repo, 'mise.toml', 'mise', 'github-tags', 'elixir-lang/elixir', '', true],
+            ['Ceratops-Code/AuTopsy', 'conan/conanfile.py', 'conan', 'conan', 'ffmpeg', '', true],
+            ['Ceratops-Code/AuTopsy', 'conan/conanfile.py', 'conan', 'conan', 'zlib', '', false],
+            ['Ceratops-Code/AuTopsy', 'lib-src/upstream/.nvmrc', 'nvm', 'node-version', 'node', '', false],
+          ];
+          // Exercise every language-version datasource in the installed Renovate, including future additions.
+          for (const source of readdirSync(resolve(renovate, 'dist/modules/datasource'), { withFileTypes: true })) {
+            if (!source.isDirectory() || !source.name.endsWith('-version')) continue;
+            for (const manager of packageRules[0].matchManagers) {
+              cases.push([repo, 'tools/project', manager, source.name, 'runtime', '', true]);
+            }
+          }
+          for (const [repository, packageFile, manager, datasource, depName, depType, expected] of cases) {
+            const result = await applyPackageRules({ repository, packageFile, manager, datasource, depName,
+              packageName: depName, depType, packageRules, enabled: true }, 'pre-lookup');
+            assert.equal(result.enabled, expected, [repository, packageFile, manager, datasource, depName].join(' '));
+          }
+          console.log(`${cases.length} dependency policy cases passed`);
+          JS
